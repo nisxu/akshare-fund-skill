@@ -127,15 +127,28 @@ def get_fund_manager() -> pd.DataFrame:
         return pd.DataFrame()
 
 
+def _format_index_symbol(symbol: str) -> str:
+    """将指数代码转换为 akshare 所需的市场前缀格式"""
+    # 如果已经是完整格式（如 sh000300），直接返回
+    if symbol.startswith(("sh", "sz", "csi")):
+        return symbol
+    # 创业板指数以 399 开头 → 深交所
+    if symbol.startswith("399"):
+        return f"sz{symbol}"
+    # 其他以 0/1/2/3 开头 → 上交所
+    return f"sh{symbol}"
+
+
 @cached(ttl=300)
-def get_index_daily(symbol: str = "000300", period: str = "daily",
+def get_index_daily(symbol: str = "000300",
                     start_date: str = "20200101", end_date: str = "") -> pd.DataFrame:
     """获取大盘指数日线数据"""
     try:
         if not end_date:
             end_date = time.strftime("%Y%m%d")
+        formatted_symbol = _format_index_symbol(symbol)
         df = ak.stock_zh_index_daily_em(
-            symbol=symbol, period=period,
+            symbol=formatted_symbol,
             start_date=start_date, end_date=end_date
         )
         return df
