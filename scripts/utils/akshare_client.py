@@ -78,14 +78,15 @@ def get_open_fund_daily() -> pd.DataFrame:
 
 
 @cached(ttl=300)
-def get_fund_info(fund_code: str, indicator: str = "累计净值走势") -> pd.DataFrame:
+def get_fund_info(fund_code: str, indicator: str = "单位净值走势", period: str = "6月") -> pd.DataFrame:
     """
     获取单只基金历史净值信息
     indicator: 累计净值走势 / 单位净值走势 / 累计收益率走势 / 同类排名走势 /
                同类排名百分比 / 分红送配详情 / 拆分详情
+    period: "1月" / "3月" / "6月" / "1年" / "3年" / "5年" / "今年来" / "成立来"
     """
     try:
-        df = ak.fund_open_fund_info_em(fund=fund_code, indicator=indicator)
+        df = ak.fund_open_fund_info_em(symbol=fund_code, indicator=indicator, period=period)
         return df
     except Exception as e:
         print(f"[错误] 获取基金 {fund_code} 信息失败: {e}")
@@ -182,7 +183,14 @@ def get_fund_rating(fund_code: str) -> pd.DataFrame:
     """获取指定基金的评级"""
     df = _get_fund_rating_all()
     if not df.empty and fund_code:
-        df = df[df["基金代码"].astype(str) == str(fund_code)]
+        # 尝试找到基金代码列（列名可能是"代码"、"基金代码"等）
+        code_col = None
+        for col in df.columns:
+            if "代码" in col or col in ("代码", "基金代码"):
+                code_col = col
+                break
+        if code_col:
+            df = df[df[code_col].astype(str) == str(fund_code)]
     return df
 
 
